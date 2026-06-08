@@ -118,6 +118,77 @@ def test_cmd_list_json_output_marks_nested_plugin_enabled_via_legacy_name(monkey
     ]
 
 
+def test_plugin_exists_accepts_legacy_nested_name(monkeypatch):
+    entries = [
+        (
+            "observability/nemo_relay",
+            "nemo_relay",
+            "0.1.0",
+            "Relay observability",
+            "bundled",
+            None,
+        )
+    ]
+    monkeypatch.setattr(plugins_cmd, "_discover_all_plugins", lambda: entries)
+
+    assert plugins_cmd._plugin_exists("nemo_relay") is True
+    assert plugins_cmd._plugin_exists("observability/nemo_relay") is True
+
+
+def test_cmd_enable_accepts_legacy_nested_name(monkeypatch, capsys):
+    entries = [
+        (
+            "observability/nemo_relay",
+            "nemo_relay",
+            "0.1.0",
+            "Relay observability",
+            "bundled",
+            None,
+        )
+    ]
+    enabled = set()
+    disabled = set()
+
+    monkeypatch.setattr(plugins_cmd, "_discover_all_plugins", lambda: entries)
+    monkeypatch.setattr(plugins_cmd, "_get_enabled_set", lambda: set(enabled))
+    monkeypatch.setattr(plugins_cmd, "_get_disabled_set", lambda: set(disabled))
+    monkeypatch.setattr(plugins_cmd, "_save_enabled_set", lambda value: enabled.clear() or enabled.update(value))
+    monkeypatch.setattr(plugins_cmd, "_save_disabled_set", lambda value: disabled.clear() or disabled.update(value))
+
+    plugins_cmd.cmd_enable("nemo_relay")
+
+    assert "nemo_relay" in enabled
+    assert "nemo_relay" not in disabled
+    assert "enabled" in capsys.readouterr().out
+
+
+def test_cmd_disable_accepts_legacy_nested_name(monkeypatch, capsys):
+    entries = [
+        (
+            "observability/nemo_relay",
+            "nemo_relay",
+            "0.1.0",
+            "Relay observability",
+            "bundled",
+            None,
+        )
+    ]
+    enabled = {"nemo_relay"}
+    disabled = set()
+
+    monkeypatch.setattr(plugins_cmd, "_discover_all_plugins", lambda: entries)
+    monkeypatch.setattr(plugins_cmd, "_get_enabled_set", lambda: set(enabled))
+    monkeypatch.setattr(plugins_cmd, "_get_disabled_set", lambda: set(disabled))
+    monkeypatch.setattr(plugins_cmd, "_save_enabled_set", lambda value: enabled.clear() or enabled.update(value))
+    monkeypatch.setattr(plugins_cmd, "_save_disabled_set", lambda value: disabled.clear() or disabled.update(value))
+
+    plugins_cmd.cmd_disable("nemo_relay")
+
+    assert "nemo_relay" not in enabled
+    assert "nemo_relay" in disabled
+    assert "disabled" in capsys.readouterr().out
+
+
 def test_discover_all_plugins_includes_nested_bundled_keys(monkeypatch, tmp_path: Path):
     bundled_dir = tmp_path / "bundled"
     nested_plugin_dir = bundled_dir / "observability" / "nemo_relay"

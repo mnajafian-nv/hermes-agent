@@ -703,27 +703,9 @@ def cmd_disable(name: str) -> None:
 
 
 def _plugin_exists(name: str) -> bool:
-    """Return True if a plugin with *name* is installed (user) or bundled."""
-    # Installed: directory name or manifest name match in user plugins dir
-    user_dir = _plugins_dir()
-    if user_dir.is_dir():
-        if (user_dir / name).is_dir():
-            return True
-        for child in user_dir.iterdir():
-            if not child.is_dir():
-                continue
-            manifest = _read_manifest(child)
-            if manifest.get("name") == name:
-                return True
-    # Bundled: <repo>/plugins/<name>/ (or HERMES_BUNDLED_PLUGINS on Nix).
-    from hermes_cli.plugins import get_bundled_plugins_dir
-    repo_plugins = get_bundled_plugins_dir()
-    if repo_plugins.is_dir():
-        candidate = repo_plugins / name
-        if candidate.is_dir() and (
-            (candidate / "plugin.yaml").exists()
-            or (candidate / "plugin.yml").exists()
-        ):
+    """Return True if *name* matches a discovered plugin key or legacy alias."""
+    for key, legacy_name, _version, _description, _source, _dir in _discover_all_plugins():
+        if name == key or name == legacy_name:
             return True
     return False
 
